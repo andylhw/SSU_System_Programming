@@ -25,8 +25,8 @@ int main(){
         memset(buf, 0, sizeof(buf));
         memset(tmp, 0, sizeof(tmp));
         int i=0;
-        int *numPtr1;
-        numPtr1 = calloc(size_16num, sizeof(int));
+        int *inputData;
+        inputData = calloc(size_16num, sizeof(int));
 
         //뒤에서부터 32자리씩 끊어서 읽어드린 후 print하는 함수
         for(int i=0;i<size_16num;i++){
@@ -41,7 +41,7 @@ int main(){
                 // printf("%s, %ld", buf, ftell(fp)); <- 읽는 도중 디버깅 할때 사용. 파일 커서의 현위치 표시.
 
 		// 파일을 읽어서 메모리에 쓰는 작업.
-                *(numPtr1+i)=calc(buf);
+                *(inputData+i)=calc(buf);
                 //printf("계산중.. 메모리 주소: %p\n", numPtr1+i);
         }
 	
@@ -54,15 +54,15 @@ int main(){
 	*/
 
 	
-        dump_mem_char(numPtr1, fileSize/8); //char형 표시하게 하는 함수 (16진수 2자리)
-	dump_mem_asc(numPtr1, fileSize/8); //ASCII를 표시하게 하는 함수
-        dump_mem_uchar(numPtr1, fileSize/8); //unsigned char형 표시하게 하는 함수(16진수 2자리)
-	dump_mem_int(numPtr1, fileSize/32); //int형 표시하게 하는 함수
-	dump_mem_uint(numPtr1, fileSize/32); //unsigned int형 표시하게 하는 함수.
-	dump_mem_float(numPtr1, fileSize/32); //float형 표시하게 하는 함수.
-	dump_mem_double(numPtr1, fileSize/64); //double형 표시하게 하는 함수.
+        dump_mem_char(inputData, fileSize/8); //char형 표시하게 하는 함수 (16진수 2자리)
+	dump_mem_asc(inputData, fileSize/8); //ASCII를 표시하게 하는 함수
+        dump_mem_uchar(inputData, fileSize/8); //unsigned char형 표시하게 하는 함수(16진수 2자리)
+	dump_mem_int(inputData, fileSize/32); //int형 표시하게 하는 함수
+	dump_mem_uint(inputData, fileSize/32); //unsigned int형 표시하게 하는 함수.
+	dump_mem_float(inputData, fileSize/32); //float형 표시하게 하는 함수.
+	dump_mem_double(inputData, fileSize/64); //double형 표시하게 하는 함수.
 
-	free(numPtr1); //메모리 동적할당 해제
+	free(inputData); //메모리 동적할당 해제
         fclose(fp); //파일 입력 중단. 함수 끝.
         return 0;
 }
