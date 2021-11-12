@@ -18,207 +18,301 @@ cat input
 Hello this is Hackers! class
 
 소스코드
---------
+============
+20170800.c
+--------------
+```c
+#include <20170800.h>
+
+int32_t main(int32_t argc, char *argv[])
+{
+	int32_t fd;
+
+	if(argc!=2) {
+		printf("Usage: editro <file>\n");
+		return 0;
+	}
+
+	fd = open(argv[1], O_RDWR|O_SYNC);
+	if(fd<0) {
+		printf("Error %d Unable to open %s\n", fd, argv[1]);
+		return 0;
+	}
+
+	Elf64_Ehdr ehdr;
+	Elf64_Shdr* sh_tbl;
+	
+	read_elf_header(fd, &ehdr);
+	//ELF헤더가 맞으면, ELF File: TRUE, 아니면 ELF File: FALSE출력.
+    	if(!is_elf(ehdr)) {
+    		printf("ELF File: FALSE\n");
+		return 0;
+	}
+	else{
+		printf("ELF File: TRUE\n");
+	}
+	
+	print_elf_header(ehdr);
+
+	sh_tbl = malloc(ehdr.e_shentsize * ehdr.e_shnum);
+	if(!sh_tbl) {
+		printf("Failed to allocate %d bytes\n", (ehdr.e_shentsize * ehdr.e_shnum));
+	}
+	print_section_headers(fd, ehdr, sh_tbl);
+
+	return 0;
+
+}
+
+```
+
+20170800.h
+----------
 ```c
 #include <stdio.h>
+#include <assert.h>
+#include <fcntl.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
+#include <errno.h>
+#include <stdbool.h>
+#include <elf.h>
 
-int calc(char* str);
-void dump_mem_char(const void *mem, size_t len);
+bool is_elf(Elf64_Ehdr eh);
+void read_elf_header(int32_t fd, Elf64_Ehdr *elf_header);
+void print_elf_header(Elf64_Ehdr elf_header);
+char *read_section(int32_t fd, Elf64_Shdr sh);
+void print_section_headers(int32_t fd, Elf64_Ehdr eh, Elf64_Shdr sh_table[]);
 void dump_mem_asc(const void *mem, size_t len);
-void dump_mem_uchar(const void *mem, size_t len);
-void dump_mem_int(void *mem, size_t len);
-void dump_mem_uint(void *mem, size_t len);
-void dump_mem_float(void *mem, size_t len);
-void dump_mem_double(void *mem, size_t len);
-void swap_for_int(void *mem, int len);
-void swap_for_double(void *mem, int len);
 
-int main(){
-        FILE *fp=fopen("input", "r");
-        char buf[33];
-        char tmp[33];
-        int fileSize, size_16num;
-        fseek(fp, 0, SEEK_END);
-        fileSize = ftell(fp);
-        size_16num=fileSize/32;
-        //printf("글자수: %d, fileSize: %d\n", fileSize, size_16num);
-        memset(buf, 0, sizeof(buf));
-        memset(tmp, 0, sizeof(tmp));
-        int i=0;
-        int *inputData;
-        inputData = calloc(size_16num, sizeof(int));
-
-        //뒤에서부터 32자리씩 끊어서 읽어드린 후 print하는 함수
-        for(int i=0;i<size_16num;i++){
-
-                fseek(fp, 32*(i+1)-8, SEEK_SET);
-                //뒤에서부터 끊어서 읽게 하기 위한 알고리즘 (Little Endian)
-		for(int j=0;j<4;j++){
-                        fread(tmp, 8, 1, fp);
-                        fseek(fp, -16, SEEK_CUR);
-                        strcat(buf, tmp);
-                }
-
-		// 파일을 읽어서 메모리에 쓰는 작업.
-                *(inputData+i)=calc(buf);
-        }
-	
-        dump_mem_char(inputData, fileSize/8); //char형 표시하게 하는 함수 (16진수 2자리)
-	dump_mem_asc(inputData, fileSize/8); //ASCII를 표시하게 하는 함수
-        dump_mem_uchar(inputData, fileSize/8); //unsigned char형 표시하게 하는 함수(16진수 2자리)
-	dump_mem_int(inputData, fileSize/32); //int형 표시하게 하는 함수
-	dump_mem_uint(inputData, fileSize/32); //unsigned int형 표시하게 하는 함수.
-	dump_mem_float(inputData, fileSize/32); //float형 표시하게 하는 함수.
-	dump_mem_double(inputData, fileSize/64); //double형 표시하게 하는 함수.
-
-	free(inputData); //메모리 동적할당 해제
-        fclose(fp); //파일 입력 중단. 함수 끝.
-        return 0;
-}
-
-//파일 안에 있는 이진수를 읽어서 정수로 변환하는 함수.
-int calc(char* str){
-        int num=0, i;
-        for(i=0;str[i]!=0;i++){
-                num= ( num << 1 ) + str[i]- '0';
-        }
-        memset(str, 0, sizeof(str));
-        return num;
-}
-
-//char형 표시하게 하는 함수 (16진수 2자리)
-void dump_mem_char(const void *mem, size_t len){
-        const char *buffer = mem;
-        size_t i;
-	printf("1. Char형: \n");
-        for(i=0;i<len;i++){
-                
-                if(i>0 && i%8 == 0) {printf("\n"); }
+//Implement this function to check whether an input file is an elf file or not.
+bool is_elf(Elf64_Ehdr eh )
+{
+	if (memcmp(eh.e_ident, ELFMAG, SELFMAG) == 0){
+		return true;
+	}
+	else{ return false;}
+	/*
+	if(eh->EI_MAG0==0x7f){
+		return true;
+	}
+	else {return false;}
+	*/	
 		
-                printf("%d ",(char)buffer[i]);
-        }
-        if(i>1 && i% 8 != 1) {puts("");}
-}
-
-//ASCII를 표시하게 하는 함수
-void dump_mem_asc(const void *mem, size_t len){
-       const char *buffer = mem;
-       size_t i;
-       printf("2. ASCII형: \n");
-       for(i=0;i<len;i++){
-		if(i>0 && i%8 == 0) {printf("\n");}
-                if((buffer[i]&0xff)>128){
-			printf(". ");
-		}
-		else{
-		printf("%c ", (buffer[i] & 0xff));
-		}
-       }
-       if(i>1 && i% 8 != 1) {puts("");}
-}
-
-//unsigned char형 표시하게 하는 함수(16진수 2자리)
-void dump_mem_uchar(const void *mem, size_t len){
-	const unsigned char *buffer = mem;
-	size_t i;
-	printf("3. Unsigned Char형:\n");
-	for(i=0;i<len;i++){
-                if(i>0 && i%8 == 0) {printf("\n");}
-                printf("%d ", (unsigned char)(buffer[i] & 0xff));
-       }
-       if(i>1 && i% 8 != 1) {puts("");}
-}
-
-//int형 표시하게 하는 함수
-void dump_mem_int(void *mem, size_t len){
-        const int *buffer = mem;
-	const char *tmp = mem;
 	
-        size_t i;
-	printf("4. Int형:\n");
-
-        for(i=0;i<len;i++){
-		swap_for_int(mem, len);
-                if(i>0 && i%8 ==0) {printf("\n");}
-                printf("%d ", (int)(buffer[i] & 0xffffffff));
-		swap_for_int(mem, len);
-       }
-       printf("\n");
 }
 
-//unsigned int형 표시하게 하는 함수.
-void dump_mem_uint(void *mem, size_t len){
-	const unsigned int *buffer = mem;
-	size_t i;
-	printf("5. Unsigned Int형: \n");
-
-	for(i=0;i<len;i++){
-		swap_for_int(mem, len);
-		if(i>0 && i%8 ==0) {printf("\n");}
-                printf("%u ", (unsigned int)(buffer[i] & 0xffffffff));
-		swap_for_int(mem, len);
-       }
-       if(i>1 && i% 8 != 1) {puts("");}
+void read_elf_header(int32_t fd, Elf64_Ehdr *elf_header)
+{
+	assert(elf_header != NULL);
+	assert(lseek(fd, (off_t)0, SEEK_SET) == (off_t)0);
+	assert(read(fd, (void *)elf_header, sizeof(Elf64_Ehdr)) == sizeof(Elf64_Ehdr));
 }
 
-//float형 표시하게 하는 함수
-void dump_mem_float(void *mem, size_t len){
-        const float *buffer = mem;
-        size_t i;
-	printf("6. Float형: \n");
-
-        for(i=0;i<len;i++){
-		swap_for_int(mem, len);
-                if(i>0 && i%8 ==0) {printf("\n");}
-                printf("%.4f ", (float)buffer[i]);
-		swap_for_int(mem, len);
-       }
-       if(i>1 && i% 8 != 1) {puts("");}
-}
-
-//double형 표시하게 하는 함수.
-void dump_mem_double(void *mem, size_t len){
-        const double *buffer = mem;
-        size_t i;
-	printf("7. Double형:\n");
-
-        for(i=0;i<len;i++){
-		swap_for_double(mem, len);
-                if(i>0 && i%8 ==0) {printf("\n");}
-                printf("%.4f ", (double)buffer[i]);
-		swap_for_double(mem, len);
-       }
-       if(i>1 && i% 8 != 1) {puts("");}
-}
-
-//4바이트 짜리를 읽어서 little endian을 제대로 읽게 하기 위한 swap함수.
-void swap_for_int(void *mem, int len){
-	char temp;
-	char *buffer = mem;
-	for(int i=0;i<len;i++)
+void print_elf_header(Elf64_Ehdr elf_header)
+{
+	printf("Storage class\t= ");
+	switch(elf_header.e_ident[EI_CLASS])
 	{
-		for(int j=0;j<2;j++){
-			temp = buffer[4*i+j];
-			buffer[4*i+j] = buffer[4*(i+1)-j-1];
-			buffer[4*(i+1)-j-1] = temp;
+		case ELFCLASS32:
+			printf("32-bit objects\n");
+			break;
+
+		case ELFCLASS64:
+			printf("64-bit objects\n");
+			break;
+
+		default:
+			printf("Unknwon CLASS\n");
+			break;
+	}
+
+	printf("Data format\t= ");
+	switch(elf_header.e_ident[EI_DATA])
+	{
+		case ELFDATA2LSB:
+			printf("2's complement, little endian\n");
+			break;
+
+		case ELFDATA2MSB:
+			printf("2's complement, big endian\n");
+			break;
+
+		default:
+			printf("Unknwon Format\n");
+			break;
+	}
+
+	printf("OS ABI\t\t= ");
+	switch(elf_header.e_ident[EI_OSABI])
+	{
+		case ELFOSABI_SYSV:
+			printf("UNIX System V ABI\n");
+			break;
+
+		case ELFOSABI_HPUX:
+			printf("HP-UX\n");
+			break;
+
+		case ELFOSABI_NETBSD:
+			printf("NetBSD\n");
+			break;
+
+		case ELFOSABI_LINUX:
+			printf("Linux\n");
+			break;
+
+		case ELFOSABI_SOLARIS:
+			printf("Sun Solaris\n");
+			break;
+
+		case ELFOSABI_AIX:
+			printf("IBM AIX\n");
+			break;
+
+		case ELFOSABI_IRIX:
+			printf("SGI Irix\n");
+			break;
+
+		case ELFOSABI_FREEBSD:
+			printf("FreeBSD\n");
+			break;
+
+		case ELFOSABI_TRU64:
+			printf("Compaq TRU64 UNIX\n");
+			break;
+
+		case ELFOSABI_MODESTO:
+			printf("Novell Modesto\n");
+			break;
+
+		case ELFOSABI_OPENBSD:
+			printf("OpenBSD\n");
+			break;
+
+		case ELFOSABI_ARM_AEABI:
+			printf("ARM EABI\n");
+			break;
+
+		case ELFOSABI_ARM:
+			printf("ARM\n");
+			break;
+
+		case ELFOSABI_STANDALONE:
+			printf("Standalone (embedded) app\n");
+			break;
+
+		default:
+			printf("Unknown (0x%x)\n", elf_header.e_ident[EI_OSABI]);
+			break;
+	}
+
+	printf("Filetype \t= ");
+	switch(elf_header.e_type)
+	{
+		case ET_NONE:
+			printf("N/A (0x0)\n");
+			break;
+
+		case ET_REL:
+			printf("Relocatable\n");
+			break;
+
+		case ET_EXEC:
+			printf("Executable\n");
+			break;
+
+		case ET_DYN:
+			printf("Shared Object\n");
+			break;
+		default:
+			printf("Unknown (0x%x)\n", elf_header.e_type);
+			break;
+	}
+
+	printf("Machine\t\t= ");
+	switch(elf_header.e_machine)
+	{
+		case EM_NONE:
+			printf("None (0x0)\n");
+			break;
+
+		case EM_386:
+			printf("INTEL x86 (0x%x)\n", EM_386);
+			break;
+
+		case EM_X86_64:
+			printf("AMD x86_64 (0x%x)\n", EM_X86_64);
+			break;
+
+		case EM_AARCH64:
+			printf("AARCH64 (0x%x)\n", EM_AARCH64);
+			break;
+
+		default:
+			printf(" 0x%x\n", elf_header.e_machine);
+			break;
+	}
+	printf("\n");
+}
+
+char *read_section(int32_t fd, Elf64_Shdr sh)
+{
+	char* buff = malloc(sh.sh_size);
+	if(!buff) {
+		printf("%s:Failed to allocate %ldbytes\n",
+				__func__, sh.sh_size);
+	}
+
+	assert(buff != NULL);
+	assert(lseek(fd, (off_t)sh.sh_offset, SEEK_SET) == (off_t)sh.sh_offset);
+	assert(read(fd, (void *)buff, sh.sh_size) == sh.sh_size);
+
+	return buff;
+}
+
+void print_section_headers(int32_t fd, Elf64_Ehdr eh, Elf64_Shdr sh_table[])
+{
+	uint32_t i;
+	char* sh_str;
+	assert(lseek(fd, (off_t)eh.e_shoff, SEEK_SET) == (off_t)eh.e_shoff);
+	
+	for(i=0; i<eh.e_shnum; i++) {
+		assert(read(fd, (void *)&sh_table[i], eh.e_shentsize) == eh.e_shentsize);
+	}
+
+	/* section-header string-table */
+	sh_str = read_section(fd, sh_table[eh.e_shstrndx]);
+	for(i=0; i<eh.e_shnum; i++) {
+		if(!strncmp((sh_str + sh_table[i].sh_name), ".rodata", 7))
+		{
+			printf("%s section info\n", (sh_str + sh_table[i].sh_name));
+			printf("    file offset = 0x%08lx\n", sh_table[i].sh_offset);
+			printf("           size = 0x%08lx\n", sh_table[i].sh_size);
+			break;	
 		}
 	}
-}
-
-//8바이트 자료형에서 little endian을 제대로 읽게 하기 위한 swap함수.
-void swap_for_double(void *mem, int len){
-        char temp;
-        char *buffer = mem;
-        for(int i=0;i<len;i++)
-        {
-		for(int j=0;j<4;j++){
-			temp = buffer[8*i+j];
-                        buffer[8*i+j] = buffer[8*(i+1)-j-1];
-                        buffer[8*(i+1)-j-1] = temp;
-
+	//만약 이 안에 .rodata가 있을 때, 
+	if (i < eh.e_shnum) {
+		char *rodata = malloc(sh_table[i].sh_size); // rodata라는 문자열을 통해서 비교예정.
+		char *mod = "hackers!"; //mod = "hackers!"를 통해서 바뀔 문자열을 선언함.
+		for(int j=0;j<sh_table[i].sh_size-4;j++){ //offset+4부터 출력되길래, 시작점이 offset+4이고, 그만큼 순환해야 하는 횟수를 4회 차감.
+			//매 offset을 증가시키면서 읽음.
+			lseek(fd, (off_t)sh_table[i].sh_offset+4+j, SEEK_SET);
+			read(fd, rodata, 8); 
+			
+			//만약 현재 읽는 곳의 문자열이 "software"이면, 그 칸을 mod("hackers!")로 바꾸라는 명령문.
+			if(!strncmp(rodata, "software", 8)){
+				lseek(fd, -8L, SEEK_CUR);
+				write(fd, mod, strlen(mod));
+			}
+		
 		}
-        }
+	}
+	
+	
 }
+
 ```
+
