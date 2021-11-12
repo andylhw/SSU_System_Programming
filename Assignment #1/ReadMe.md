@@ -1,6 +1,6 @@
 # Assignment 1 - Read Memory
 
-1. 0과 1로 이루어진 input파일을 읽는다
+1. 0과 1로 이루어진 input파일을 읽는다 (같은 디렉토리 내에서 input 이라는 파일이 있어야함)
 2. 0과 1을 비트별로 읽은 후에, 다양한 data type을 이용해 출력을 한다.
 3. input file의 사이즈는 클 수 있다.
 
