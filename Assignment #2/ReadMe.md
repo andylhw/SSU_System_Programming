@@ -60,21 +60,10 @@ int main(){
                         fseek(fp, -16, SEEK_CUR);
                         strcat(buf, tmp);
                 }
-                // printf("%s, %ld", buf, ftell(fp)); <- 읽는 도중 디버깅 할때 사용. 파일 커서의 현위치 표시.
 
 		// 파일을 읽어서 메모리에 쓰는 작업.
                 *(inputData+i)=calc(buf);
-                //printf("계산중.. 메모리 주소: %p\n", numPtr1+i);
         }
-	
-	/* 테스트용
-	char *numPtr2=(char *)numPtr1;
-        printf("ptr1 = %p, 값: %X\n", numPtr2, *numPtr2);
-        printf("ptr2 = %p, 값: %X\n", (numPtr2+1), *(numPtr2+1));
-	printf("ptr2 = %p, 값: %X\n", (numPtr2+2), *(numPtr2+2));
-	printf("ptr2 = %p, 값: %X\n", (numPtr2+3), *(numPtr2+3));
-	*/
-
 	
         dump_mem_char(inputData, fileSize/8); //char형 표시하게 하는 함수 (16진수 2자리)
 	dump_mem_asc(inputData, fileSize/8); //ASCII를 표시하게 하는 함수
