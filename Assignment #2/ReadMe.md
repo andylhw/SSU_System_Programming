@@ -1,5 +1,5 @@
 #Assignment 2 - Modify rodata section
-
+=============
 1. ELF file인지 체크하라
 2. 프로그램은 .rodata섹션을 다음과 같은 상황으로 수정해야한다.
 >"software"라는 string을 검색한다.
